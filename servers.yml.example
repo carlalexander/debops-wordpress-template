@@ -1,0 +1,23 @@
+# servers.yml
+
+staging:
+  host: staging.example.com
+  user: wordpress
+  identity_file:
+    private_key: '~/.ssh/id_rsa'
+    public_key: '~/.ssh/id_rsa.pub'
+    password: 'key-password'
+  stage: staging
+  deploy_path: '/var/www/staging.example.com'
+  branch: develop
+
+production:
+  host: example.com
+  user: wordpress
+  identity_file:
+    private_key: '~/.ssh/id_rsa'
+    public_key: '~/.ssh/id_rsa.pub'
+    password: 'key-password'
+  stage: production
+  deploy_path: '/var/www/example.com'
+  branch: master
