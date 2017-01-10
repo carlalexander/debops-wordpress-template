@@ -28,6 +28,9 @@ set('http_user', 'wordpress');
 // nginx group
 set('http_group', 'wordpress');
 
+// Temporary directory path
+set('tmp_path', '/tmp/deployer');
+
 
 /**
  * WordPress Configuration
@@ -47,20 +50,111 @@ set('writable_dirs', ['wp-content/uploads']);
 
 
 /**
- * Tasks
+ * Backup all shared files and directories
  */
+task('setup:backup', function () {
+    $currentPath = '{{deploy_path}}/current';
+    $tmpPath = get('tmp_path');
 
+    // Delete tmp dir if it exists.
+    run("if [ -d $tmpPath ]; then rm -R $tmpPath; fi");
+
+    // Create tmp dir.
+    run("mkdir -p $tmpPath");
+
+    foreach (get('shared_dirs') as $dir) {
+        // Check if the shared dir exists.
+        if (test("[ -d $(echo $currentPath/$dir) ]")) {
+            // Create tmp shared dir.
+            run("mkdir -p $tmpPath/$dir");
+
+            // Copy shared dir to tmp shared dir.
+            run("cp -rv $currentPath/$dir $tmpPath/" . dirname($dir));
+        }
+    }
+
+    foreach (get('shared_files') as $file) {
+        // If shared file exists, copy it to tmp dir.
+        run("if [ -f $(echo $currentPath/$file) ]; then cp $currentPath/$file $tmpPath/$file; fi");
+    }
+})->desc('Backup all shared files and directories');
+
+
+/**
+ * Purge all files from the deploy path directory
+ */
+task('setup:purge', function () {
+    // Delete everything in deploy dir.
+    run('rm -R {{deploy_path}}/*');
+})->desc('Purge all files from the deploy path directory');
+
+
+/**
+ * Restore backup of shared files and directories
+ */
+task('setup:restore', function() {
+    $sharedPath = "{{deploy_path}}/shared";
+    $tmpPath = get('tmp_path');
+
+    foreach (get('shared_dirs') as $dir) {
+        // If tmp shared dir exists, copy it to shared dir.
+        run("if [ -d $(echo $tmpPath/$dir) ]; then cp -rv $tmpPath/$dir $sharedPath/" . dirname($dir) . "; fi");
+    }
+
+    foreach (get('shared_files') as $file) {
+        // If tmp shared file exists, copy it to shared dir.
+        run("if [ -f $(echo $tmpPath/$file) ]; then cp $tmpPath/$file $sharedPath/$file; fi");
+    }
+})->desc('Restore backup of shared files and directories');
+
+
+/**
+ * Configure known_hosts for git repository
+ */
+task('setup:known_hosts', function () {
+    $repository = get('repository');
+    $host = '';
+
+    if (filter_var($repository, FILTER_VALIDATE_URL) !== FALSE) {
+        $host = parse_url($repository, PHP_URL_HOST);
+    } elseif (preg_match('/^git@(?P<host>\w+?\.\w+?):/i', $repository, $matches)) {
+        $host = $matches['host'];
+    }
+
+    if (empty($host)) {
+        throw new \RuntimeException('Couldn\'t parse host from repository.');
+    }
+
+    run("ssh-keyscan -H -T 10 $host >> ~/.ssh/known_hosts");
+})->desc('Configure known_hosts for git repository');
+
+
+/**
+ * Setup success message
+ */
+task('setup:success', function () {
+    Deployer::setDefault('terminate_message', '<info>Successfully setup!</info>');
+})->once()->setPrivate();
+
+
+/**
+ * Reload nginx service
+ */
 task('nginx:reload', function () {
    run('sudo /etc/init.d/nginx reload');
 })->desc('Reload nginx service');
 
+
+/**
+ * Reload varnish service
+ */
 task('varnish:reload', function () {
    run('sudo /etc/init.d/varnish reload');
 })->desc('Reload varnish service');
 
 
 /**
- * Main task
+ * Deploy task
  */
 task('deploy', [
     'deploy:prepare',
@@ -74,5 +168,17 @@ task('deploy', [
     'varnish:reload',
     'nginx:reload',
 ])->desc('Deploy your WordPress project');
-
 after('deploy', 'success');
+
+
+/**
+ * Setup task
+ */
+task('setup', [
+    'setup:backup',
+    'setup:purge',
+    'deploy:prepare',
+    'setup:restore',
+    'setup:known_hosts',
+])->desc('Setup your WordPress project');
+after('setup', 'setup:success');
