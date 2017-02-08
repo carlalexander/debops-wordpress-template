@@ -138,11 +138,11 @@ task('setup:success', function () {
 
 
 /**
- * Reload nginx service
+ * Reload php-fpm service
  */
-task('nginx:reload', function () {
-   run('sudo /etc/init.d/nginx reload');
-})->desc('Reload nginx service');
+task('php-fpm:reload', function () {
+   run('sudo /etc/init.d/php7.0-fpm reload');
+})->desc('Reload php-fpm service');
 
 
 /**
@@ -166,7 +166,7 @@ task('deploy', [
     'deploy:symlink',
     'cleanup',
     'varnish:reload',
-    'nginx:reload',
+    'php-fpm:reload',
 ])->desc('Deploy your WordPress project');
 after('deploy', 'success');
 
