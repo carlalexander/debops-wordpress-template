@@ -160,7 +160,6 @@ task('deploy', [
     'deploy:prepare',
     'deploy:release',
     'deploy:update_code',
-    'deploy:copy_dirs',
     'deploy:shared',
     'deploy:writable',
     'deploy:symlink',
