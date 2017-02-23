@@ -158,11 +158,13 @@ task('varnish:reload', function () {
  */
 task('deploy', [
     'deploy:prepare',
+    'deploy:lock',
     'deploy:release',
     'deploy:update_code',
     'deploy:shared',
     'deploy:writable',
     'deploy:symlink',
+    'deploy:unlock',
     'cleanup',
     'varnish:reload',
     'php-fpm:reload',
