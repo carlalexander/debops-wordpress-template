@@ -1,7 +1,7 @@
 # servers.yml
 
 staging:
-  host: staging.example.com
+  hostname: staging.example.com
   user: wordpress
   identity_file:
     private_key: '~/.ssh/id_rsa'
@@ -12,7 +12,7 @@ staging:
   branch: develop
 
 production:
-  host: example.com
+  hostname: example.com
   user: wordpress
   identity_file:
     private_key: '~/.ssh/id_rsa'

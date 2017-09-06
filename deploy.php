@@ -16,8 +16,8 @@ require 'recipe/common.php';
  * Server Configuration
  */
 
-// Define servers
-serverList('servers.yml');
+// Define servers for Deployer v6
+inventory( 'servers.yml' );
 
 // Default server
 set('default_stage', 'production');
